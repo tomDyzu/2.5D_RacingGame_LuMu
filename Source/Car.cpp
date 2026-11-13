@@ -93,6 +93,8 @@ Car::Car(ModulePhysics* physics, int x, int y)
 	, front_right_joint(NULL)
 	, steer_angle(0.0f)
 	, braking(false)
+	, touching_wall(false)
+	, wall_align_left(0.0f)
 {
 	chassis = physics->CreateRectangle(x, y, chassis_half_width, chassis_half_height, chassis_density);
 
@@ -121,8 +123,57 @@ Car::Car(ModulePhysics* physics, int x, int y)
 void Car::Update()
 {
 	b2Body* body = chassis->body;
-	float speed = GetSpeed();
 	float mass = GetTotalMass();
+
+	// Crash against a wall: lose speed --------------------------------------
+	b2Vec2 wall_normal;
+	bool touching = IsTouchingWall(wall_normal);
+	if (touching && !touching_wall)
+	{
+		// Direction along the wall, the side the car is looking to
+		b2Vec2 forward = body->GetWorldVector(b2Vec2(0.0f, -1.0f));
+		b2Vec2 tangent(-wall_normal.y, wall_normal.x);
+		if (b2Dot(tangent, forward) < 0.0f)
+			tangent = -tangent;
+
+		// Half the speed, only along the wall, and a small push out
+		float speed_along = wall_speed_factor * b2Dot(body->GetLinearVelocity(), tangent);
+		if (speed_along < 0.0f)
+			speed_along = 0.0f;
+		b2Vec2 v = speed_along * tangent + wall_bounce_speed * wall_normal;
+
+		body->SetLinearVelocity(v);
+		body->SetAngularVelocity(0.0f);
+		for (int i = 0; i < TIRE_COUNT; ++i)
+			tires[i].body->body->SetLinearVelocity(v);
+
+		// Turn the car until it looks along the wall. The car looks to its local -Y:
+		// forward = (sin(angle), -cos(angle)) -> angle = atan2(x, -y)
+		float target = atan2f(tangent.x, -tangent.y);
+		float diff = target - body->GetAngle();
+		while (diff > b2_pi)
+			diff -= 2.0f * b2_pi;
+		while (diff < -b2_pi)
+			diff += 2.0f * b2_pi;
+		wall_align_left = diff * RAD2DEG;
+	}
+	touching_wall = touching;
+
+	// A bit of the turn every frame
+	if (wall_align_left != 0.0f)
+	{
+		float max_step = wall_align_speed * PHYSICS_DT;
+		float step = wall_align_left;
+		if (step > max_step)
+			step = max_step;
+		else if (step < -max_step)
+			step = -max_step;
+
+		Rotate(step * DEGTORAD);
+		wall_align_left -= step;
+	}
+
+	float speed = GetSpeed();
 
 	// Steering ---------------------------------------------------------------
 	float steer_input = 0.0f;
@@ -163,7 +214,7 @@ void Car::Update()
 	}
 
 	// Engine and brake ----------------------------------------------------------
-	braking = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_SPACE);
+	braking = IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN);
 
 	b2Vec2 forward = body->GetWorldVector(b2Vec2(0.0f, -1.0f));
 
@@ -243,6 +294,76 @@ void Car::Destroy(ModulePhysics* physics)
 	chassis = NULL;
 	front_left_joint = NULL;
 	front_right_joint = NULL;
+}
+
+void Car::Rotate(float radians)
+{
+	b2Body* body = chassis->body;
+	b2Vec2 center = body->GetPosition();
+	b2Rot rotation(radians);
+
+	b2Body* parts[TIRE_COUNT + 1] = { body };
+	for (int i = 0; i < TIRE_COUNT; ++i)
+		parts[i + 1] = tires[i].body->body;
+
+	// Every part moves around the center and turns the same angle: the joints stay happy
+	for (b2Body* part : parts)
+	{
+		b2Vec2 position = center + b2Mul(rotation, part->GetPosition() - center);
+		part->SetTransform(position, part->GetAngle() + radians);
+		part->SetLinearVelocity(b2Mul(rotation, part->GetLinearVelocity()));
+	}
+}
+
+bool Car::Owns(const PhysBody* body) const
+{
+	if (body == NULL)
+		return false;
+
+	if (body == chassis)
+		return true;
+
+	for (int i = 0; i < TIRE_COUNT; ++i)
+	{
+		if (body == tires[i].body)
+			return true;
+	}
+	return false;
+}
+
+bool Car::IsTouchingWall(b2Vec2& normal) const
+{
+	b2Body* parts[TIRE_COUNT + 1] = { chassis->body };
+	for (int i = 0; i < TIRE_COUNT; ++i)
+		parts[i + 1] = tires[i].body->body;
+
+	normal.SetZero();
+	bool touching = false;
+
+	for (b2Body* part : parts)
+	{
+		for (b2ContactEdge* edge = part->GetContactList(); edge != NULL; edge = edge->next)
+		{
+			b2Contact* contact = edge->contact;
+			if (!contact->IsTouching() || edge->other->GetType() != b2_staticBody)
+				continue;
+
+			// Box2D normal goes from fixture A to fixture B: we want it from the wall to the car
+			b2WorldManifold manifold;
+			contact->GetWorldManifold(&manifold);
+			b2Vec2 n = manifold.normal;
+			if (contact->GetFixtureA()->GetBody() == part)
+				n = -n;
+
+			normal += n;
+			touching = true;
+		}
+	}
+
+	if (touching)
+		normal.Normalize();
+
+	return touching;
 }
 
 void Car::GetPosition(float& x, float& y) const

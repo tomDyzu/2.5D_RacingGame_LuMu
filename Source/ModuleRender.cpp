@@ -29,14 +29,8 @@ bool ModuleRender::Init()
 	return ret;
 }
 
-// PreUpdate: clear buffer
+// PreUpdate: start the frame BEFORE any module draws (all PreUpdate() run before any Update())
 update_status ModuleRender::PreUpdate()
-{
-	return UPDATE_CONTINUE;
-}
-
-// Update: debug camera
-update_status ModuleRender::Update()
 {
     // NOTE: This function setups render batching system for
     // maximum performance, all consecutive Draw() calls are
@@ -47,6 +41,11 @@ update_status ModuleRender::Update()
     // From here everything is drawn in world pixels
     BeginMode2D(camera_2d);
 
+	return UPDATE_CONTINUE;
+}
+
+update_status ModuleRender::Update()
+{
 	return UPDATE_CONTINUE;
 }
 

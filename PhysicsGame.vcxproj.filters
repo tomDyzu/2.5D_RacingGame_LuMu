@@ -31,6 +31,9 @@
     <ClCompile Include="Source\Car.cpp">
       <Filter>Sources</Filter>
     </ClCompile>
+    <ClCompile Include="Source\TileMap.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source/p2Point.h">
@@ -64,6 +67,9 @@
       <Filter>Headers</Filter>
     </ClInclude>
     <ClInclude Include="Source\Car.h">
+      <Filter>Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\TileMap.h">
       <Filter>Headers</Filter>
     </ClInclude>
   </ItemGroup>

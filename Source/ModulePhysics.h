@@ -5,6 +5,8 @@
 
 #include "box2d/box2d.h"
 
+#include <vector>
+
 // Gravity in m/s^2. Screen Y grows DOWNWARDS and we convert meters <-> pixels without flipping Y,
 // so a POSITIVE Y gravity makes bodies fall down on screen. That is why the world receives -GRAVITY_Y.
 // TODO 2: No gravity to the bottom of the screen
@@ -56,6 +58,12 @@ public:
 	PhysBody* CreateRectangle(int x, int y, int half_width, int half_height, float density = 1.0f);
 	PhysBody* CreateRectangleSensor(int x, int y, int half_width, int half_height);
 	PhysBody* CreateChain(int x, int y, const int* points, int size);
+
+	// One static body with a box for every rectangle (pixels). Used for the walls of the map
+	PhysBody* CreateStaticRectangles(const std::vector<Rectangle>& rects);
+
+	// One static body with a thin wall along every line (pixels). Each pair of points is a segment
+	PhysBody* CreateStaticLines(const std::vector<std::vector<Vector2>>& lines);
 
 	// Joins body_b to body_a. anchor_x, anchor_y: point of body_a (pixels, local) where the center of body_b is pinned
 	// Angles in radians, relative to body_a. lower == upper locks the joint at that angle

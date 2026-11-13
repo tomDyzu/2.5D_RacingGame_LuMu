@@ -306,6 +306,70 @@ PhysBody* ModulePhysics::CreateChain(int x, int y, const int* points, int size)
 	return pbody;
 }
 
+PhysBody* ModulePhysics::CreateStaticRectangles(const std::vector<Rectangle>& rects)
+{
+	PhysBody* pbody = new PhysBody();
+
+	b2BodyDef body;
+	body.type = b2_staticBody;
+	body.position.Set(0.0f, 0.0f);
+	body.userData.pointer = reinterpret_cast<uintptr_t>(pbody);
+
+	b2Body* b = world->CreateBody(&body);
+
+	for (const Rectangle& r : rects)
+	{
+		// SetAsBox wants half sizes and the center, relative to the body (at 0, 0)
+		b2Vec2 center(PIXEL_TO_METERS(r.x + r.width / 2.0f), PIXEL_TO_METERS(r.y + r.height / 2.0f));
+
+		b2PolygonShape box;
+		box.SetAsBox(PIXEL_TO_METERS(r.width / 2.0f), PIXEL_TO_METERS(r.height / 2.0f), center, 0.0f);
+
+		b2FixtureDef fixture;
+		fixture.shape = &box;
+		fixture.friction = 0.3f;    // the car slides along the wall
+		fixture.restitution = 0.1f; // a small bounce
+		b->CreateFixture(&fixture);
+	}
+
+	pbody->body = b;
+
+	return pbody;
+}
+
+PhysBody* ModulePhysics::CreateStaticLines(const std::vector<std::vector<Vector2>>& lines)
+{
+	PhysBody* pbody = new PhysBody();
+
+	b2BodyDef body;
+	body.type = b2_staticBody;
+	body.position.Set(0.0f, 0.0f);
+	body.userData.pointer = reinterpret_cast<uintptr_t>(pbody);
+
+	b2Body* b = world->CreateBody(&body);
+
+	for (const std::vector<Vector2>& line : lines)
+	{
+		for (int i = 0; i + 1 < (int)line.size(); ++i)
+		{
+			// Edges collide on both sides (chains in this Box2D version only on one side)
+			b2EdgeShape edge;
+			edge.SetTwoSided(b2Vec2(PIXEL_TO_METERS(line[i].x), PIXEL_TO_METERS(line[i].y)),
+				b2Vec2(PIXEL_TO_METERS(line[i + 1].x), PIXEL_TO_METERS(line[i + 1].y)));
+
+			b2FixtureDef fixture;
+			fixture.shape = &edge;
+			fixture.friction = 0.3f;    // the car slides along the wall
+			fixture.restitution = 0.1f; // a small bounce
+			b->CreateFixture(&fixture);
+		}
+	}
+
+	pbody->body = b;
+
+	return pbody;
+}
+
 void ModulePhysics::DestroyBody(PhysBody* pbody)
 {
 	if (pbody == NULL)

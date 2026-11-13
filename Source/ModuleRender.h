@@ -25,7 +25,7 @@ public:
 	Color background;
     Rectangle camera;
 
-	// World camera: everything drawn between Update() and PostUpdate() is in world pixels
+	// World camera: everything drawn between PreUpdate() and PostUpdate() is in world pixels
 	// To draw the HUD (screen pixels) call EndMode2D() and then BeginMode2D(camera_2d) again
 	Camera2D camera_2d;
 };
