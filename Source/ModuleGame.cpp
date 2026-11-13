@@ -10,6 +10,9 @@
 // Space between the finish line and the front of the car (pixels)
 #define START_GAP 20
 
+// Camera zoom: 1.0 = normal, bigger = closer (everything looks bigger), smaller = see more of the map
+#define CAMERA_ZOOM 0.75f
+
 // Walls ----------------------------------------------------------------------
 // Radius of the curves at the corners of the walls (pixels). Bigger: rounder corners
 #define WALL_CORNER_RADIUS 128.0f
@@ -37,6 +40,7 @@ bool ModuleGame::Start()
 	LOG("Loading game scene");
 
 	App->renderer->SetBackgroundColor(Color{ 60, 120, 60, 255 });
+	App->renderer->camera_2d.zoom = CAMERA_ZOOM;
 
 	if (!map.Load("Assets/Mapa_Tiled/racing_circuit_F1_Shanghai.tmx"))
 		return false;

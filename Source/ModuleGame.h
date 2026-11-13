@@ -30,7 +30,7 @@ private:
 	// Floor with lines: helps to see that the car moves
 	void DrawGround() const;
 
-	// Walls drawn by code along wall_lines: red and white stripes
+	// Collision lines of the walls (wall_lines)
 	void DrawWalls() const;
 	void DrawHud() const;
 	void UpdateCamera();

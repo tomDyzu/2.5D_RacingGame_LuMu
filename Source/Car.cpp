@@ -159,8 +159,8 @@ void Car::Update()
 	}
 	touching_wall = touching;
 
-	// A bit of the turn every frame
-	if (wall_align_left != 0.0f)
+	// A bit of the turn every frame (wall_align_speed = 0: the car does not turn)
+	if (wall_align_left != 0.0f && wall_align_speed > 0.0f)
 	{
 		float max_step = wall_align_speed * PHYSICS_DT;
 		float step = wall_align_left;
@@ -220,13 +220,14 @@ void Car::Update()
 
 	if (braking)
 	{
-		// Brake against the motion. Never enough to go backwards
-		if (speed > 0.0f)
+		// Brake against the motion, little by little, down to brake_min_speed
+		float speed_to_lose = speed - brake_min_speed;
+		if (speed_to_lose > 0.0f)
 		{
 			float force = mass * brake_deceleration;
-			float force_to_stop = mass * speed / PHYSICS_DT;
-			if (force > force_to_stop)
-				force = force_to_stop;
+			float force_to_min = mass * speed_to_lose / PHYSICS_DT; // never below brake_min_speed
+			if (force > force_to_min)
+				force = force_to_min;
 
 			body->ApplyForceToCenter(-force * forward, true);
 		}
@@ -253,32 +254,8 @@ void Car::Draw() const
 	for (int i = 0; i < TIRE_COUNT; ++i)
 		tires[i].Draw();
 
-	const b2Body* body = chassis->body;
-	float half_w = (float)chassis_half_width;
-	float half_h = (float)chassis_half_height;
-
-	// Front wing, wider than the body
-	float wing_width = (tire_offset_x + tire_half_width) * 2.0f;
-	DrawBodyRectangle(body, 0.0f, -half_h + 3.0f, wing_width, 6.0f, Color{ 40, 40, 40, 255 });
-
-	// Rear wing
-	DrawBodyRectangle(body, 0.0f, half_h - 4.0f, wing_width - 8.0f, 8.0f, Color{ 40, 40, 40, 255 });
-
-	// Body
-	DrawBodyRectangle(body, 0.0f, 0.0f, half_w * 2.0f, half_h * 2.0f - 10.0f, Color{ 200, 30, 30, 255 });
-
-	// White stripe on the nose: shows where the front is
-	DrawBodyRectangle(body, 0.0f, -half_h * 0.5f, 4.0f, half_h * 0.8f, RAYWHITE);
-
-	// Cockpit and helmet
-	DrawBodyRectangle(body, 0.0f, 6.0f, half_w * 1.2f, 18.0f, Color{ 30, 30, 30, 255 });
-	Vector2 helmet = LocalToWorld(body, 0.0f, 6.0f);
-	DrawCircleV(helmet, 5.0f, YELLOW);
-
-	// Brake lights
-	Color light = braking ? Color{ 255, 40, 40, 255 } : Color{ 90, 0, 0, 255 };
-	DrawBodyRectangle(body, -half_w + 3.0f, half_h - 1.0f, 5.0f, 3.0f, light);
-	DrawBodyRectangle(body, half_w - 3.0f, half_h - 1.0f, 5.0f, 3.0f, light);
+	// Body: one rectangle
+	DrawBodyRectangle(chassis->body, 0.0f, 0.0f, chassis_half_width * 2.0f, chassis_half_height * 2.0f, Color{ 200, 30, 30, 255 });
 }
 
 void Car::Destroy(ModulePhysics* physics)
