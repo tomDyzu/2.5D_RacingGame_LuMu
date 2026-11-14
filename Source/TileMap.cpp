@@ -254,6 +254,23 @@ std::vector<Rectangle> TileMap::GetLayerRectangles(const char* layer_name) const
 	return rects;
 }
 
+std::vector<Vector2> TileMap::GetLayerTileCenters(const char* layer_name) const
+{
+	std::vector<Vector2> centers;
+
+	const Layer* layer = FindLayer(layer_name);
+	if (layer == NULL)
+		return centers;
+
+	for (int i = 0; i < width * height; ++i)
+	{
+		if (layer->tiles[i] != 0)
+			centers.push_back(Vector2{ (i % width + 0.5f) * tile_width, (i / width + 0.5f) * tile_height });
+	}
+
+	return centers;
+}
+
 bool TileMap::GetLayerBounds(const char* layer_name, Rectangle& bounds) const
 {
 	const Layer* layer = FindLayer(layer_name);

@@ -6,12 +6,13 @@
 #include "Car.h"
 
 #include <math.h>
+#include <algorithm>
 
 // Space between the finish line and the front of the car (pixels)
 #define START_GAP 20
 
 // Camera zoom: 1.0 = normal, bigger = closer (everything looks bigger), smaller = see more of the map
-#define CAMERA_ZOOM 0.75f
+#define CAMERA_ZOOM 0.5f
 
 // Walls ----------------------------------------------------------------------
 // Radius of the curves at the corners of the walls (pixels). Bigger: rounder corners
@@ -26,8 +27,6 @@ ModuleGame::ModuleGame(Application* app, bool start_enabled) : Module(app, start
 {
 	walls = NULL;
 	car = NULL;
-	start_x = 0;
-	start_y = 0;
 	started = false;
 }
 
@@ -51,7 +50,7 @@ bool ModuleGame::Start()
 	walls = App->physics->CreateStaticLines(wall_lines);
 	LOG("Walls: %d lines", (int)wall_lines.size());
 
-	FindStartPosition();
+	FindStartPositions();
 	ResetCar();
 
 	return true;
@@ -78,21 +77,39 @@ bool ModuleGame::CleanUp()
 	return true;
 }
 
-void ModuleGame::FindStartPosition()
+void ModuleGame::FindStartPositions()
 {
+	start_positions = map.GetLayerTileCenters("Inicio");
+
 	Rectangle meta;
-	if (map.GetLayerBounds("Meta", meta))
+	bool has_meta = map.GetLayerBounds("Meta", meta);
+
+	if (start_positions.empty())
 	{
-		// Centered on the line, the front of the car just below it
-		start_x = (int)(meta.x + meta.width / 2.0f);
-		start_y = (int)(meta.y + meta.height) + START_GAP + Car::chassis_half_height;
+		// No "Inicio" layer: centered just below the finish line, or the center of the map
+		LOG("No Inicio layer: using the Meta layer to place the car");
+		if (has_meta)
+			start_positions.push_back(Vector2{ meta.x + meta.width / 2.0f, meta.y + meta.height + START_GAP + Car::chassis_half_height });
+		else
+			start_positions.push_back(Vector2{ map.GetWidthInPixels() / 2.0f, map.GetHeightInPixels() / 2.0f });
+		return;
 	}
-	else
+
+	if (has_meta)
 	{
-		LOG("No Meta layer: the car starts at the center of the map");
-		start_x = map.GetWidthInPixels() / 2;
-		start_y = map.GetHeightInPixels() / 2;
+		// Sort by distance to the center of the finish line: the first one is the pole position
+		Vector2 meta_center = { meta.x + meta.width / 2.0f, meta.y + meta.height / 2.0f };
+		auto distance = [&](const Vector2& p)
+		{
+			float dx = p.x - meta_center.x;
+			float dy = p.y - meta_center.y;
+			return dx * dx + dy * dy;
+		};
+		std::sort(start_positions.begin(), start_positions.end(),
+			[&](const Vector2& a, const Vector2& b) { return distance(a) < distance(b); });
 	}
+
+	LOG("Start grid: %d positions", (int)start_positions.size());
 }
 
 void ModuleGame::ResetCar()
@@ -103,7 +120,9 @@ void ModuleGame::ResetCar()
 		delete car;
 	}
 
-	car = new Car(App->physics, start_x, start_y);
+	// The player starts last: the position farthest from the finish line
+	const Vector2& start = start_positions.back();
+	car = new Car(App->physics, (int)start.x, (int)start.y);
 	started = false;
 	UpdateCamera();
 }

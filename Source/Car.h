@@ -47,21 +47,19 @@ public:
 	};
 
 	// Tuning ---------------------------------------------------------------
-	static constexpr float top_speed = 8.0f;          
+	static constexpr float top_speed = 12.0f;          
 	static constexpr float engine_acceleration = 0.025f; // m/s^2 at speed 0, less and less near top_speed
 	static constexpr float brake_deceleration = 0.1f;  // m/s^2: the brake slows the car little by little
 	static constexpr float brake_min_speed = 0.0f;     // m/s: braking never goes below this speed (0 = it can stop)
 	static constexpr float max_steer_angle = 12.5f;    // degrees, at speed 0
 	static constexpr float min_steer_factor = 0.5f;    // at top_speed only 50% of max_steer_angle
-	static constexpr float steer_speed = 35.0f;        // degrees per second the front wheels turn
-	static constexpr float front_grip = 5.0f;         // max sideways acceleration the front wheels can hold (m/s^2)
+	static constexpr float steer_speed = 30.0f;        // degrees per second the front wheels turn
+	static constexpr float front_grip = 2.5f;         // max sideways acceleration the front wheels can hold (m/s^2)
 	static constexpr float rear_grip = 45.0f;          // more grip at the back: the car drifts a bit but does not spin
 	static constexpr float chassis_density = 0.4f;     // light chassis, heavy wheels: the wheels lead the car
 	static constexpr float tire_density = 1.0f;
-	static constexpr float wall_speed_factor = 0.4f;   // hitting a wall keeps only 40% of the speed
-	static constexpr float wall_bounce_speed = 1.0f;   // m/s the car is pushed away from the wall when it hits it
-	static constexpr float wall_align_speed = 0.0f;  // degrees per second: after a hit the car turns until
-	                                                   // it is parallel to the wall and keeps going along it
+	static constexpr float wall_speed_factor = 0.7f;   // hitting a wall keeps only 70% of the speed
+	static constexpr float wall_bounce_speed = 1.5f;   // m/s the car is pushed away from the wall when it hits it
 
 	// Size in pixels (the drawing and the physics use the same sizes) ------------
 	// Body: 2 * chassis_half_width x 2 * chassis_half_height
@@ -92,11 +90,7 @@ public:
 	// normal: direction from the wall to the car
 	bool IsTouchingWall(b2Vec2& normal) const;
 
-private:
-	// Turns the whole car (chassis and wheels together) around the center of the chassis
-	void Rotate(float radians);
 
-public:
 
 public:
 	PhysBody* chassis;
@@ -112,7 +106,4 @@ public:
 	// Touching a wall in the last Update(). Only a NEW contact cuts the speed:
 	// sliding along a wall (or along the steps of a diagonal wall) does not
 	bool touching_wall;
-
-	// Degrees the car still has to turn to be parallel to the wall it hit
-	float wall_align_left;
 };

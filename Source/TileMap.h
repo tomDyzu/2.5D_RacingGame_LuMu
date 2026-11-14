@@ -28,6 +28,9 @@ public:
 	// A closed line repeats its first point at the end
 	std::vector<std::vector<Vector2>> GetLayerLines(const char* layer_name, float corner_radius, float join_distance) const;
 
+	// Center (pixels) of every tile of a layer that is not empty, row by row
+	std::vector<Vector2> GetLayerTileCenters(const char* layer_name) const;
+
 	// Rectangle (pixels) that contains all the tiles of a layer. False if the layer is empty or missing
 	bool GetLayerBounds(const char* layer_name, Rectangle& bounds) const;
 

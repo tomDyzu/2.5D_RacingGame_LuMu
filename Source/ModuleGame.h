@@ -23,8 +23,8 @@ public:
 	void OnCollision(PhysBody* bodyA, PhysBody* bodyB) override;
 
 private:
-	// Start position: centered just below the "Meta" layer
-	void FindStartPosition();
+	// Start positions from the "Inicio" layer, sorted from the closest to the finish line to the farthest
+	void FindStartPositions();
 	void ResetCar();
 
 	// Floor with lines: helps to see that the car moves
@@ -47,9 +47,9 @@ public:
 
 	Car* car;
 
-	// Where the car starts (pixels), looking up
-	int start_x;
-	int start_y;
+	// Grid positions (pixels, center of the car), sorted: [0] is the closest to the finish line
+	// The player always starts in the last one. The others are for the bots (later)
+	std::vector<Vector2> start_positions;
 
 	// The race waits until the player presses SPACE
 	bool started;

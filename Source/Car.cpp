@@ -94,7 +94,6 @@ Car::Car(ModulePhysics* physics, int x, int y)
 	, steer_angle(0.0f)
 	, braking(false)
 	, touching_wall(false)
-	, wall_align_left(0.0f)
 {
 	chassis = physics->CreateRectangle(x, y, chassis_half_width, chassis_half_height, chassis_density);
 
@@ -136,7 +135,7 @@ void Car::Update()
 		if (b2Dot(tangent, forward) < 0.0f)
 			tangent = -tangent;
 
-		// Half the speed, only along the wall, and a small push out
+		// Less speed (wall_speed_factor), only along the wall, and a small push out
 		float speed_along = wall_speed_factor * b2Dot(body->GetLinearVelocity(), tangent);
 		if (speed_along < 0.0f)
 			speed_along = 0.0f;
@@ -146,32 +145,8 @@ void Car::Update()
 		body->SetAngularVelocity(0.0f);
 		for (int i = 0; i < TIRE_COUNT; ++i)
 			tires[i].body->body->SetLinearVelocity(v);
-
-		// Turn the car until it looks along the wall. The car looks to its local -Y:
-		// forward = (sin(angle), -cos(angle)) -> angle = atan2(x, -y)
-		float target = atan2f(tangent.x, -tangent.y);
-		float diff = target - body->GetAngle();
-		while (diff > b2_pi)
-			diff -= 2.0f * b2_pi;
-		while (diff < -b2_pi)
-			diff += 2.0f * b2_pi;
-		wall_align_left = diff * RAD2DEG;
 	}
 	touching_wall = touching;
-
-	// A bit of the turn every frame (wall_align_speed = 0: the car does not turn)
-	if (wall_align_left != 0.0f && wall_align_speed > 0.0f)
-	{
-		float max_step = wall_align_speed * PHYSICS_DT;
-		float step = wall_align_left;
-		if (step > max_step)
-			step = max_step;
-		else if (step < -max_step)
-			step = -max_step;
-
-		Rotate(step * DEGTORAD);
-		wall_align_left -= step;
-	}
 
 	float speed = GetSpeed();
 
@@ -271,25 +246,6 @@ void Car::Destroy(ModulePhysics* physics)
 	chassis = NULL;
 	front_left_joint = NULL;
 	front_right_joint = NULL;
-}
-
-void Car::Rotate(float radians)
-{
-	b2Body* body = chassis->body;
-	b2Vec2 center = body->GetPosition();
-	b2Rot rotation(radians);
-
-	b2Body* parts[TIRE_COUNT + 1] = { body };
-	for (int i = 0; i < TIRE_COUNT; ++i)
-		parts[i + 1] = tires[i].body->body;
-
-	// Every part moves around the center and turns the same angle: the joints stay happy
-	for (b2Body* part : parts)
-	{
-		b2Vec2 position = center + b2Mul(rotation, part->GetPosition() - center);
-		part->SetTransform(position, part->GetAngle() + radians);
-		part->SetLinearVelocity(b2Mul(rotation, part->GetLinearVelocity()));
-	}
 }
 
 bool Car::Owns(const PhysBody* body) const
