@@ -12,7 +12,7 @@
 #define START_GAP 20
 
 // Camera zoom: 1.0 = normal, bigger = closer (everything looks bigger), smaller = see more of the map
-#define CAMERA_ZOOM 0.5f
+#define CAMERA_ZOOM 0.75f
 
 // Walls ----------------------------------------------------------------------
 // Radius of the curves at the corners of the walls (pixels). Bigger: rounder corners
