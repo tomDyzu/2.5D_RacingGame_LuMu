@@ -39,6 +39,11 @@ bool ModuleWindow::Init()
     SetConfigFlags(flags);
 	InitWindow(width, height, TITLE);
 
+	// The physics does one step of 1/60 s every frame: the game must run at 60 FPS
+	// If not, a fast computer (1000+ FPS) plays everything much faster than a normal one
+	// VSYNC alone is not enough: some graphics cards ignore it
+	SetTargetFPS(60);
+
 	return ret;
 }
 
